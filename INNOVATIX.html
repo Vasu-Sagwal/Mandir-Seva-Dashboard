@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mandir Seva Dashboard - Crowd & Queue Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Laila:wght@500;700&family=Inter:wght@400;600&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FFF8E1; /* Light Creamy Yellow */
+        }
+        h1, h2, h3, .font-mandir {
+            font-family: 'Laila', serif;
+        }
+        .mandir-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(239, 108, 0, 0.3);
+            border-radius: 1.25rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .mandir-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        }
+        .nav-btn {
+            transition: all 0.3s ease;
+        }
+        .nav-btn.active {
+            background-color: #FB8C00;
+            color: white;
+            box-shadow: 0 4px 14px rgba(251, 140, 0, 0.4);
+        }
+        .digital-display {
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            color: #f7fafc;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            border: 3px solid #4a5568;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5), 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .digital-display .label {
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            color: #a0aec0;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .digital-display .token-number {
+            font-size: 5rem;
+            line-height: 1;
+            color: #68d391;
+            text-shadow: 0 0 8px #68d391, 0 0 15px #68d391;
+        }
+        .digital-display .next-token-number {
+             font-size: 2.5rem;
+             line-height: 1;
+             color: #faf089;
+             text-shadow: 0 0 8px #faf089;
+        }
+         .digital-display .token-range {
+            font-size: 3rem;
+            line-height: 1;
+        }
+        .modal {
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-content {
+            animation: scaleUp 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes scaleUp {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #FFECB3; }
+        ::-webkit-scrollbar-thumb { background: #FFB74D; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #FFA726; }
+        
+        .support-fab {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        .support-fab span {
+            visibility: hidden;
+            opacity: 0;
+            width: 0;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            font-weight: 600;
+        }
+        .support-fab:hover span {
+            visibility: visible;
+            opacity: 1;
+            width: auto;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    
+    <div class="absolute inset-0 bg-gradient-to-t from-[#FFF8E1] via-[#FFF8E1]/70 to-transparent"></div>
+
+
+    <div class="container mx-auto max-w-7xl p-4 lg:p-6 relative z-10">
+        <header class="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
+            <div class="flex items-center space-x-4">
+                <div class="p-3 bg-orange-500/20 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F57C00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 11 8-9 8 9v11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"></path><path d="M12 22V11"></path></svg>
+                </div>
+                <h1 class="text-3xl lg:text-4xl font-bold text-orange-800">Mandir Seva Dashboard</h1>
+            </div>
+            <div class="flex items-center bg-white/50 p-1.5 rounded-full space-x-2 flex-wrap justify-center shadow-sm">
+                <button data-view="main" class="nav-btn active font-mandir py-2 px-6 rounded-full text-sm font-semibold">Dashboard</button>
+                <button data-view="token" class="nav-btn font-mandir py-2 px-6 rounded-full text-sm font-semibold">Queue</button>
+                <button data-view="navigation" class="nav-btn font-mandir py-2 px-6 rounded-full text-sm font-semibold">Navigation</button>
+            </div>
+        </header>
+
+        <main id="main-dashboard" class="view-section grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8 relative">
+            <div class="lg:col-span-1 xl:col-span-1 flex flex-col gap-8">
+                <div class="mandir-card p-6 flex flex-col items-center justify-center text-center">
+                    <h2 class="text-xl font-semibold text-gray-600 mb-2">Live Devotee Count</h2>
+                    <p id="crowd-count" class="text-7xl font-bold text-gray-900 transition-colors duration-500">2,150</p>
+                    <div id="status-indicator" class="mt-4 px-6 py-2 rounded-full text-lg font-semibold transition-all duration-500 flex items-center space-x-2">
+                        <span id="status-icon"></span>
+                        <span id="status-text">Normal</span>
+                    </div>
+                </div>
+
+                <div class="mandir-card p-6">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4 flex items-center"><i data-lucide="siren" class="mr-3 h-6 w-6 text-red-500"></i>Emergency Protocols</h2>
+                    <p class="text-sm text-gray-500 mb-4">Trigger emergency response in case of a critical incident.</p>
+                    <button id="panic-button" class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 active:scale-95 flex items-center justify-center space-x-2 shadow-lg shadow-red-500/30">
+                        <i data-lucide="zap"></i>
+                        <span>TRIGGER PANIC ALERT</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 xl:col-span-2 flex flex-col gap-8">
+                <div class="mandir-card p-6">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4 flex items-center"><i data-lucide="map" class="mr-3 h-6 w-6 text-orange-600"></i>Live Density Heatmap</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-center text-sm font-semibold">
+                        <div id="zone-A" class="heatmap-zone p-4 rounded-lg border-2"><p>Gate A (Entry)</p><span class="text-xs text-gray-500" id="zone-A-count"></span></div>
+                        <div id="zone-B" class="heatmap-zone p-4 rounded-lg border-2"><p>Sanctum Queue</p><span class="text-xs text-gray-500" id="zone-B-count"></span></div>
+                        <div id="zone-C" class="heatmap-zone p-4 rounded-lg border-2"><p>Gate C (Exit)</p><span class="text-xs text-gray-500" id="zone-C-count"></span></div>
+                        <div id="zone-D" class="heatmap-zone p-4 rounded-lg border-2"><p>Prasad Counter</p><span class="text-xs text-gray-500" id="zone-D-count"></span></div>
+                        <div id="zone-E" class="heatmap-zone p-4 rounded-lg border-2 col-span-2 md:col-span-1"><p>Gate D (VIP)</p><span class="text-xs text-gray-500" id="zone-E-count"></span></div>
+                        <div id="zone-F" class="heatmap-zone p-4 rounded-lg border-2"><p>Courtyard</p><span class="text-xs text-gray-500" id="zone-F-count"></span></div>
+                    </div>
+                     <div class="text-center mt-6">
+                        <button id="show-heatmap-btn" class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold py-2 px-5 rounded-lg transition-transform duration-150 active:scale-95 flex items-center justify-center space-x-2 mx-auto text-sm">
+                            <i data-lucide="eye"></i>
+                            <span>View Heatmap</span>
+                        </button>
+                    </div>
+                </div>
+                 <div class="mandir-card p-6">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4 flex items-center"><i data-lucide="message-square-text" class="mr-3 h-6 w-6 text-orange-600"></i>Visitor Guidance</h2>
+                     <textarea id="visitor-message" class="w-full bg-orange-50/50 rounded-lg p-3 text-sm h-24 placeholder-gray-500 border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"></textarea>
+                    <button id="send-visitor-message" class="mt-4 w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 active:scale-95 shadow-lg shadow-blue-500/30">Send Broadcast</button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-3 xl:col-span-1 flex flex-col gap-8">
+                 <div class="mandir-card p-6 flex flex-col">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4 flex items-center"><i data-lucide="bell-ring" class="mr-3 h-6 w-6 text-orange-600"></i>Live Alerts & Notifications</h2>
+                    <div id="alert-log" class="flex-grow space-y-4 overflow-y-auto h-96 pr-2"></div>
+                </div>
+            </div>
+            <button class="info-btn absolute bottom-0 left-0 m-2 w-8 h-8 bg-gray-200 text-gray-600 rounded-full flex items-center justify-center hover:bg-gray-300 transition-all duration-200 z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+            </button>
+        </main>
+        
+        <section id="token-dashboard" class="view-section hidden relative">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 flex flex-col gap-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                         <div class="digital-display">
+                            <p class="label">Now Serving</p>
+                            <p id="now-serving" class="token-number">---</p>
+                        </div>
+                         <div class="digital-display">
+                            <p class="label">Next In Line</p>
+                            <p id="next-in-line" class="next-token-number">---</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="digital-display bg-green-900/50">
+                            <p class="label">Entry Now</p>
+                            <p id="entry-now-range" class="token-range text-green-400">---</p>
+                        </div>
+                        <div class="digital-display bg-yellow-900/50">
+                            <p class="label">Prepare to Enter</p>
+                            <p id="prepare-range" class="token-range text-yellow-400">---</p>
+                            <p id="prepare-wait-time" class="label mt-2 text-yellow-200">Calculating...</p>
+                        </div>
+                    </div>
+                </div>
+                 <div class="flex flex-col gap-8">
+                    <div class="mandir-card p-6 flex flex-col items-center justify-center">
+                        <h3 class="font-mandir text-xl text-orange-800 mb-4">Generate Darshan Token</h3>
+                        <p class="text-gray-500 mb-4 text-sm text-center">Generate a new QR token for a devotee.</p>
+                        <button id="generate-token-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-8 rounded-lg mb-4 transition-transform duration-150 active:scale-95 text-lg font-mandir shadow-lg shadow-orange-500/30">Generate Token</button>
+                        <div id="qrcode-container" class="bg-white p-3 rounded-lg w-48 h-48 flex items-center justify-center shadow-inner">
+                            <span class="text-gray-500 text-xs text-center">Your QR Code will appear here</span>
+                        </div>
+                        <p id="token-number-display" class="mt-3 font-bold text-xl text-gray-700"></p>
+                    </div>
+                    <div class="mandir-card p-6 flex flex-col items-center justify-center border-blue-400">
+                        <h3 class="font-mandir text-xl text-blue-800 mb-4 flex items-center">
+                            <i data-lucide="accessibility" class="mr-2"></i>
+                            Special Assistance
+                        </h3>
+                        <p class="text-gray-500 mb-4 text-sm text-center">Priority token for physically challenged devotees.</p>
+                        <button id="generate-special-token-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-8 rounded-lg mb-4 transition-transform duration-150 active:scale-95 text-lg font-mandir shadow-lg shadow-blue-500/30">Get Special Token</button>
+                        <div class="bg-blue-50 p-3 rounded-lg w-full text-center">
+                             <p class="text-xs text-blue-600">Your Special Token:</p>
+                             <p id="special-token-number-display" class="font-bold text-xl text-blue-800">---</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <button class="info-btn absolute bottom-0 left-0 m-2 w-8 h-8 bg-gray-200 text-gray-600 rounded-full flex items-center justify-center hover:bg-gray-300 transition-all duration-200 z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+            </button>
+        </section>
+        
+        <section id="navigation-dashboard" class="view-section hidden relative">
+            <h2 class="text-3xl font-bold text-orange-700 mb-8 text-center font-mandir">Major Temple Navigation</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="mandir-card overflow-hidden text-center">
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold font-mandir">Somnath Jyotirlinga</h3>
+                        <p class="text-sm text-gray-500 mb-4">Prabhas Patan, Gujarat</p>
+                        <a href="https://www.google.com/maps/search/?api=1&query=Somnath+Temple" target="_blank" class="inline-block bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-lg transition shadow-lg shadow-orange-500/30">Get Directions</a>
+                    </div>
+                </div>
+                <div class="mandir-card overflow-hidden text-center">
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold font-mandir">Dwarkadhish Temple</h3>
+                        <p class="text-sm text-gray-500 mb-4">Dwarka, Gujarat</p>
+                        <a href="https://www.google.com/maps/search/?api=1&query=Dwarkadhish+Temple+Dwarka" target="_blank" class="inline-block bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-lg transition shadow-lg shadow-orange-500/30">Get Directions</a>
+                    </div>
+                </div>
+                <div class="mandir-card overflow-hidden text-center">
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold font-mandir">Mahakali, Pavagadh</h3>
+                        <p class="text-sm text-gray-500 mb-4">Pavagadh Hill, Gujarat</p>
+                        <a href="https://www.google.com/maps/search/?api=1&query=Mahakali+Temple+Pavagadh" target="_blank" class="inline-block bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-lg transition shadow-lg shadow-orange-500/30">Get Directions</a>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-10">
+                <button id="show-3d-map-btn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-8 rounded-lg transition-transform duration-150 active:scale-95 flex items-center justify-center space-x-2 mx-auto shadow-lg shadow-gray-500/30">
+                    <i data-lucide="view"></i>
+                    <span>View 3D Map (Beta)</span>
+                </button>
+            </div>
+             <hr class="my-10 border-orange-200">
+            <h2 class="text-3xl font-bold text-orange-700 mb-8 text-center font-mandir">Nearby Stay Options</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                 <div>
+                    <h3 class="text-xl font-bold font-mandir">Near Somnath</h3>
+                     <div class="flex gap-4 justify-center mt-3">
+                        <a href="https://www.google.com/maps/search/?api=1&query=dharamshala+near+Somnath+Temple" target="_blank" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-5 rounded-lg transition shadow-lg shadow-blue-500/30">Dharamshalas</a>
+                        <a href="https://www.google.com/maps/search/?api=1&query=hotels+near+Somnath+Temple" target="_blank" class="inline-block bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-5 rounded-lg transition shadow-lg shadow-teal-500/30">Hotels</a>
+                    </div>
+                </div>
+                 <div>
+                    <h3 class="text-xl font-bold font-mandir">Near Dwarkadhish</h3>
+                     <div class="flex gap-4 justify-center mt-3">
+                        <a href="https://www.google.com/maps/search/?api=1&query=dharamshala+near+Dwarkadhish+Temple" target="_blank" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-5 rounded-lg transition shadow-lg shadow-blue-500/30">Dharamshalas</a>
+                        <a href="https://www.google.com/maps/search/?api=1&query=hotels+near+Dwarkadhish+Temple" target="_blank" class="inline-block bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-5 rounded-lg transition shadow-lg shadow-teal-500/30">Hotels</a>
+                    </div>
+                </div>
+                 <div>
+                    <h3 class="text-xl font-bold font-mandir">Near Pavagadh</h3>
+                     <div class="flex gap-4 justify-center mt-3">
+                        <a href="https://www.google.com/maps/search/?api=1&query=dharamshala+near+Pavagadh" target="_blank" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-5 rounded-lg transition shadow-lg shadow-blue-500/30">Dharamshalas</a>
+                        <a href="https://www.google.com/maps/search/?api=1&query=hotels+near+Pavagadh" target="_blank" class="inline-block bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-5 rounded-lg transition shadow-lg shadow-teal-500/30">Hotels</a>
+                    </div>
+                </div>
+            </div>
+             <button class="info-btn absolute bottom-0 left-0 m-2 w-8 h-8 bg-gray-200 text-gray-600 rounded-full flex items-center justify-center hover:bg-gray-300 transition-all duration-200 z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+            </button>
+        </section>
+    </div>
+
+    <button id="support-btn" class="fixed bottom-6 right-6 bg-orange-500 hover:bg-orange-600 text-white rounded-full p-4 shadow-xl z-40 transition-all duration-300 hover:rounded-xl">
+        <div class="support-fab">
+            <i data-lucide="message-circle"></i>
+            <span>Support</span>
+        </div>
+    </button>
+    
+    <div id="support-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="modal-content mandir-card p-8 rounded-lg text-center max-w-sm w-full relative">
+            <button id="close-support-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+                <i data-lucide="x"></i>
+            </button>
+            <i data-lucide="phone-call" class="mx-auto h-16 w-16 text-orange-500 mb-4"></i>
+            <h2 class="text-2xl font-bold font-mandir mb-2">Temple Trust Support</h2>
+            <p class="text-gray-600 mb-4">For any assistance, please contact us.</p>
+            <p class="text-3xl font-bold text-gray-800 mb-6">+91 12345 67890</p>
+            <button id="chat-support-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition-transform duration-150 active:scale-95 flex items-center justify-center space-x-2 shadow-lg shadow-green-500/30">
+                <i data-lucide="message-square"></i>
+                <span>Start Chat</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="construction-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="modal-content mandir-card p-8 rounded-lg text-center max-w-sm w-full">
+            <i data-lucide="wrench" class="mx-auto h-16 w-16 text-orange-500 mb-4"></i>
+            <h2 class="text-2xl font-bold font-mandir mb-2">Under Construction</h2>
+            <p class="text-gray-600 mb-6">This feature is currently being developed. Thank you for your patience!</p>
+            <button id="close-modal-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg shadow-orange-500/30">Close</button>
+        </div>
+    </div>
+    
+    <div id="heatmap-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="modal-content mandir-card p-4 rounded-lg text-center max-w-4xl w-full">
+            <h2 class="text-2xl font-bold font-mandir mb-4">Live Heatmap Visualization</h2>
+            <img src="https://i.ibb.co/9g080b9/heatmap.jpg" alt="Heatmap Visualization" class="w-full h-auto rounded-lg shadow-md">
+            <button id="close-heatmap-modal-btn" class="mt-4 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg shadow-orange-500/30">Close</button>
+        </div>
+    </div>
+    
+    <div id="panic-overlay" class="fixed inset-0 bg-red-700 bg-opacity-90 z-[100] hidden animate-pulse"></div>
+    <div id="panic-modal" class="modal fixed inset-0 flex items-center justify-center p-4 z-[101] hidden">
+        <div class="modal-content mandir-card p-8 rounded-lg text-center max-w-lg w-full bg-white border-4 border-red-500">
+            <div class="relative w-24 h-24 mx-auto">
+                 <i data-lucide="siren" class="absolute inset-0 mx-auto h-24 w-24 text-red-600 animate-ping opacity-75"></i>
+                 <i data-lucide="siren" class="absolute inset-0 mx-auto h-24 w-24 text-red-600"></i>
+            </div>
+            <h2 class="text-4xl font-bold font-mandir text-red-700 my-4">PANIC ALERT TRIGGERED</h2>
+            <div class="text-left space-y-3 text-lg text-gray-800">
+                <p class="flex items-center"><i data-lucide="check-circle" class="h-6 w-6 text-green-600 mr-3 flex-shrink-0"></i>Message sent to all nearby people.</p>
+                <p class="flex items-center"><i data-lucide="check-circle" class="h-6 w-6 text-green-600 mr-3 flex-shrink-0"></i>Police authorities notified: STAND BY.</p>
+                <p class="flex items-center"><i data-lucide="check-circle" class="h-6 w-6 text-green-600 mr-3 flex-shrink-0"></i>Nearest hospitals alerted for support.</p>
+            </div>
+            <button id="close-panic-modal-btn" class="mt-8 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-gray-500/30">Acknowledge & Clear</button>
+        </div>
+    </div>
+
+    <div id="innovatix-info-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="modal-content mandir-card p-8 rounded-lg text-center max-w-sm w-full relative">
+            <button id="close-innovatix-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+                <i data-lucide="x"></i>
+            </button>
+            <h2 class="text-2xl font-bold font-mandir mb-4">Project Information</h2>
+            <p class="text-gray-700 leading-relaxed">This original project by <span class="font-semibold text-orange-700">INNOVATIX</span> was created by <span class="font-semibold text-orange-700">Vasu Sagwal</span>.</p>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            
+            // --- STATE MANAGEMENT ---
+            let state = {
+                crowdCount: 2150, lastStatus: 'Normal', tokenCounter: 105,
+                specialTokenCounter: 0,
+                queue: ['T-101', 'T-102', 'T-103', 'T-104', 'T-105'], 
+                specialQueue: [],
+                nowServing: null, alertIdCounter: 0,
+                zones: {
+                    A: { name: 'Gate A (Entry)', count: 800, capacity: 1000 },
+                    B: { name: 'Sanctum Queue', count: 600, capacity: 700 },
+                    C: { name: 'Gate C (Exit)', count: 300, capacity: 1000 },
+                    D: { name: 'Prasad Counter', count: 200, capacity: 250 },
+                    E: { name: 'Gate D (VIP)', count: 50, capacity: 100 },
+                    F: { name: 'Courtyard', count: 150, capacity: 1500 },
+                }
+            };
+            
+            // --- DOM ELEMENTS ---
+            const navButtons = document.querySelectorAll('.nav-btn');
+            const viewSections = document.querySelectorAll('.view-section');
+            const show3dMapBtn = document.getElementById('show-3d-map-btn');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const constructionModal = document.getElementById('construction-modal');
+            const showHeatmapBtn = document.getElementById('show-heatmap-btn');
+            const closeHeatmapModalBtn = document.getElementById('close-heatmap-modal-btn');
+            const heatmapModal = document.getElementById('heatmap-modal');
+            const panicOverlay = document.getElementById('panic-overlay');
+            const panicModal = document.getElementById('panic-modal');
+            const closePanicModalBtn = document.getElementById('close-panic-modal-btn');
+            const supportBtn = document.getElementById('support-btn');
+            const supportModal = document.getElementById('support-modal');
+            const closeSupportModalBtn = document.getElementById('close-support-modal-btn');
+            const chatSupportBtn = document.getElementById('chat-support-btn');
+            const crowdCountEl = document.getElementById('crowd-count');
+            const statusIndicatorEl = document.getElementById('status-indicator');
+            const statusTextEl = document.getElementById('status-text');
+            const statusIconEl = document.getElementById('status-icon');
+            const alertLogEl = document.getElementById('alert-log');
+            const panicButton = document.getElementById('panic-button');
+            const generateTokenBtn = document.getElementById('generate-token-btn');
+            const generateSpecialTokenBtn = document.getElementById('generate-special-token-btn');
+            const specialTokenNumberDisplay = document.getElementById('special-token-number-display');
+            const qrcodeContainer = document.getElementById('qrcode-container');
+            const tokenNumberDisplay = document.getElementById('token-number-display');
+            const nowServingEl = document.getElementById('now-serving');
+            const nextInLineEl = document.getElementById('next-in-line');
+            const sendVisitorMessageBtn = document.getElementById('send-visitor-message');
+            const entryNowRangeEl = document.getElementById('entry-now-range');
+            const prepareRangeEl = document.getElementById('prepare-range');
+            const prepareWaitTimeEl = document.getElementById('prepare-wait-time');
+            const innovatixModal = document.getElementById('innovatix-info-modal');
+            const closeInnovatixModalBtn = document.getElementById('close-innovatix-modal-btn');
+            const infoBtns = document.querySelectorAll('.info-btn');
+
+            // --- NAVIGATION LOGIC ---
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const view = button.dataset.view;
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    viewSections.forEach(section => {
+                        section.id === `${view}-dashboard` ? section.classList.remove('hidden') : section.classList.add('hidden');
+                    });
+                });
+            });
+            
+            // --- SOUND EFFECT ---
+            const synth = new Tone.Synth({
+                oscillator: { type: "fatsawtooth", count: 3, spread: 30 },
+                envelope: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.4, attackCurve: "exponential" }
+            }).toDestination();
+
+            const playSiren = () => {
+                if (typeof Tone !== 'undefined') {
+                    const now = Tone.now();
+                    synth.triggerAttackRelease("A4", "8n", now);
+                    synth.triggerAttackRelease("E5", "8n", now + 0.2);
+                }
+            };
+
+            // --- MODAL LOGIC ---
+            const openModal = (modal) => modal.classList.remove('hidden');
+            const closeModal = (modal) => modal.classList.add('hidden');
+
+            show3dMapBtn.addEventListener('click', () => openModal(constructionModal));
+            closeModalBtn.addEventListener('click', () => closeModal(constructionModal));
+            showHeatmapBtn.addEventListener('click', () => openModal(constructionModal));
+            closeHeatmapModalBtn.addEventListener('click', () => closeModal(heatmapModal));
+            
+            closePanicModalBtn.addEventListener('click', () => {
+                closeModal(panicOverlay);
+                closeModal(panicModal);
+            });
+
+            supportBtn.addEventListener('click', () => openModal(supportModal));
+            closeSupportModalBtn.addEventListener('click', () => closeModal(supportModal));
+            chatSupportBtn.addEventListener('click', () => {
+                closeModal(supportModal);
+                openModal(constructionModal);
+                lucide.createIcons();
+            });
+
+            // --- Innovatix Info Modal Logic ---
+            infoBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevents other click events on the card
+                    openModal(innovatixModal);
+                    lucide.createIcons(); // To render the 'x' icon in the modal
+                });
+            });
+            closeInnovatixModalBtn.addEventListener('click', () => closeModal(innovatixModal));
+
+            const createAlert = (level, title, message) => {
+                const timestamp = new Date().toLocaleTimeString();
+                let icon = '', colorClass = '';
+                switch (level) {
+                    case 'info': icon = '<i data-lucide="info" class="h-5 w-5 text-blue-500"></i>'; colorClass = 'border-blue-400 bg-blue-50'; break;
+                    case 'warning': icon = '<i data-lucide="alert-triangle" class="h-5 w-5 text-yellow-500"></i>'; colorClass = 'border-yellow-400 bg-yellow-50'; break;
+                    case 'critical': icon = '<i data-lucide="alert-octagon" class="h-5 w-5 text-red-500"></i>'; colorClass = 'border-red-400 bg-red-50'; break;
+                    case 'emergency': icon = '<i data-lucide="siren" class="h-5 w-5 text-red-500 animate-pulse"></i>'; colorClass = 'border-red-500 bg-red-100'; break;
+                }
+                const alertHTML = `<div class="mandir-card p-3 border-l-4 ${colorClass} flex space-x-3"><div class="flex-shrink-0 pt-0.5">${icon}</div><div><p class="font-semibold text-sm text-gray-800">${title}</p><p class="text-xs text-gray-600">${message}</p><p class="text-xs text-gray-400 mt-1">${timestamp}</p></div></div>`;
+                alertLogEl.insertAdjacentHTML('afterbegin', alertHTML);
+                if (alertLogEl.children.length > 20) alertLogEl.lastElementChild.remove();
+                lucide.createIcons();
+            };
+
+            const updateHeatmap = () => {
+                for (const zoneId in state.zones) {
+                    const zone = state.zones[zoneId];
+                    const zoneEl = document.getElementById(`zone-${zoneId}`);
+                    const zoneCountEl = document.getElementById(`zone-${zoneId}-count`);
+                    const density = zone.count / zone.capacity;
+                    zoneCountEl.textContent = `${zone.count} / ${zone.capacity}`;
+                    zoneEl.classList.remove('bg-green-100', 'border-green-300', 'text-green-800', 'bg-yellow-100', 'border-yellow-300', 'text-yellow-800', 'bg-red-100', 'border-red-300', 'text-red-800');
+                    if (density > 0.85) { zoneEl.classList.add('bg-red-100', 'border-red-300'); zoneEl.querySelector('p').classList.add('text-red-800'); } 
+                    else if (density > 0.6) { zoneEl.classList.add('bg-yellow-100', 'border-yellow-300'); zoneEl.querySelector('p').classList.add('text-yellow-800');} 
+                    else { zoneEl.classList.add('bg-green-100', 'border-green-300'); zoneEl.querySelector('p').classList.add('text-green-800'); }
+                }
+            };
+
+            const updateDashboard = () => {
+                crowdCountEl.textContent = state.crowdCount.toLocaleString();
+                let currentStatus = state.crowdCount > 5000 ? 'Critical' : state.crowdCount > 3000 ? 'Warning' : 'Normal';
+                if (currentStatus !== state.lastStatus) {
+                    state.lastStatus = currentStatus;
+                    statusTextEl.textContent = currentStatus;
+                    statusIndicatorEl.classList.remove('bg-green-100', 'text-green-800', 'bg-yellow-100', 'text-yellow-800', 'animate-pulse', 'bg-red-100', 'text-red-800');
+                    switch (currentStatus) {
+                        case 'Normal': statusIndicatorEl.classList.add('bg-green-100', 'text-green-800'); statusIconEl.innerHTML = '<i data-lucide="shield-check"></i>'; break;
+                        case 'Warning': statusIndicatorEl.classList.add('bg-yellow-100', 'text-yellow-800', 'animate-pulse'); statusIconEl.innerHTML = '<i data-lucide="shield-alert"></i>'; createAlert('warning', 'Warning Threshold', `Count: ${state.crowdCount}`); break;
+                        case 'Critical': statusIndicatorEl.classList.add('bg-red-100', 'text-red-800', 'animate-pulse'); statusIconEl.innerHTML = '<i data-lucide="shield-x"></i>'; createAlert('critical', 'Critical Threshold', `Count: ${state.crowdCount}`); break;
+                    }
+                    lucide.createIcons();
+                }
+                updateHeatmap();
+            };
+
+             const simulateCrowd = () => {
+                let totalZoneCount = 0;
+                for (const zoneId in state.zones) {
+                    const zone = state.zones[zoneId];
+                    const zoneChange = (Math.random() - 0.5) * 50;
+                    zone.count = Math.max(50, Math.min(zone.capacity + 200, Math.round(zone.count + zoneChange)));
+                    totalZoneCount += zone.count;
+                }
+                state.crowdCount = totalZoneCount;
+                updateDashboard();
+            };
+
+            let qrCodeInstance = null;
+            const generateToken = () => {
+                state.tokenCounter++;
+                const token = `T-${state.tokenCounter}`;
+                state.queue.push(token);
+                qrcodeContainer.innerHTML = '';
+                qrCodeInstance = new QRCode(qrcodeContainer, { text: `Token: ${token}`, width: 168, height: 168 });
+                tokenNumberDisplay.textContent = `Your Token: ${token}`;
+                createAlert('info', 'New Token Generated', `Token ${token} issued.`);
+                updateQueueDisplay();
+            };
+
+            const generateSpecialToken = () => {
+                state.specialTokenCounter++;
+                const token = `S-${state.specialTokenCounter}`;
+                state.specialQueue.push(token);
+                specialTokenNumberDisplay.textContent = token;
+                createAlert('info', 'Special Token Generated', `Token ${token} issued for priority access.`);
+            };
+
+            const updateQueueDisplay = () => {
+                nowServingEl.textContent = state.nowServing || '---';
+                nextInLineEl.textContent = state.specialQueue[0] || state.queue[0] || '---';
+            };
+
+            const updateTokenRanges = () => {
+                const nowServingToken = state.nowServing;
+                if (!nowServingToken || nowServingToken.startsWith('S-')) {
+                    entryNowRangeEl.textContent = '---';
+                    prepareRangeEl.textContent = '---';
+                    prepareWaitTimeEl.textContent = 'Priority Serving';
+                    return;
+                }
+                const batchSize = 10;
+                const avgTimePerTokenSeconds = 8;
+                const nowServingNum = parseInt(nowServingToken.replace('T-', ''));
+                const entryBatchStart = Math.floor((nowServingNum - 1) / batchSize) * batchSize + 1;
+                const entryBatchEnd = entryBatchStart + batchSize - 1;
+                entryNowRangeEl.textContent = `T-${entryBatchStart} to T-${entryBatchEnd}`;
+                const prepareBatchStart = entryBatchEnd + 1;
+                const prepareBatchEnd = prepareBatchStart + batchSize - 1;
+                prepareRangeEl.textContent = `T-${prepareBatchStart} to T-${prepareBatchEnd}`;
+                const tokensLeft = entryBatchEnd - nowServingNum;
+                const waitSeconds = (tokensLeft + 1) * avgTimePerTokenSeconds;
+                const waitMinutes = Math.ceil(waitSeconds / 60);
+                if (waitMinutes <= 1) prepareWaitTimeEl.textContent = `Approx. wait: < 1 min`;
+                else prepareWaitTimeEl.textContent = `Approx. wait: ${waitMinutes} mins`;
+            };
+
+            const callNextToken = () => {
+                let calledToken = false;
+                if (state.specialQueue.length > 0) {
+                    state.nowServing = state.specialQueue.shift();
+                    calledToken = true;
+                } 
+                else if (state.queue.length > 0) {
+                    state.nowServing = state.queue.shift();
+                    calledToken = true;
+                }
+
+                if (calledToken) {
+                    createAlert('info', 'Next Token Called', `Now serving ${state.nowServing}.`);
+                    updateQueueDisplay();
+                    updateTokenRanges();
+                }
+            };
+            
+            panicButton.addEventListener('click', () => {
+                if (Tone.context.state !== 'running') {
+                    Tone.context.resume().then(playSiren);
+                } else {
+                    playSiren();
+                }
+                openModal(panicOverlay);
+                openModal(panicModal);
+                lucide.createIcons();
+                createAlert('emergency', 'PANIC BUTTON ACTIVATED', 'Emergency protocols triggered.');
+                createAlert('critical', 'Message Sent: Police HQ', 'Requesting immediate backup.');
+                createAlert('critical', 'Message Sent: City Hospital', 'Potential mass casualty incident.');
+            });
+
+            generateTokenBtn.addEventListener('click', generateToken);
+            generateSpecialTokenBtn.addEventListener('click', generateSpecialToken);
+            sendVisitorMessageBtn.addEventListener('click', () => {
+                const visitorMessageEl = document.getElementById('visitor-message');
+                if (visitorMessageEl.value.trim()) createAlert('info', 'Broadcast Sent', visitorMessageEl.value.trim());
+            });
+
+
+            updateDashboard();
+            callNextToken();
+            createAlert('info', 'System Online', 'Mandir Seva Dashboard initialized.');
+            setInterval(simulateCrowd, 3000);
+            setInterval(callNextToken, 8000);
+        });
+    </script>
+</body>
+</html>
